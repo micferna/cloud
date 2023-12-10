@@ -49,4 +49,15 @@ else
     exit 1
 fi
 
+# Nettoyer /var/log
+echo "Nettoyage des fichiers de log dans /var/log..."
+sudo sh -c 'rm -rf /var/log/*'
+
+# Nettoyer les journaux de systemctl
+echo "Nettoyage des journaux de systemctl..."
+sudo journalctl --rotate
+sudo journalctl --vacuum-time=1s
+
+echo "Nettoyage terminé."
+
 echo "Toutes les étapes ont été exécutées avec succès."
