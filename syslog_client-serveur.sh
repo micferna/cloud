@@ -44,6 +44,12 @@ is_client_configured() {
     return $?
 }
 
+# Fonction pour configurer systemd-journald
+configure_journald() {
+    echo "ForwardToSyslog=yes" >> /etc/systemd/journald.conf
+    systemctl restart systemd-journald
+}
+
 # Fonction pour installer le serveur Syslog
 install_server() {
     if is_rsyslog_installed && is_server_configured; then
@@ -60,6 +66,9 @@ install_server() {
     # Configurer le serveur Syslog
     sed -i 's/#module(load="imudp")/module(load="imudp")/' /etc/rsyslog.conf
     sed -i 's/#input(type="imudp" port="514")/input(type="imudp" port="514")/' /etc/rsyslog.conf
+
+    # Configurer systemd-journald pour rediriger vers rsyslog
+    configure_journald
 
     # Redémarrer le service rsyslog
     systemctl restart rsyslog
@@ -88,6 +97,9 @@ install_client() {
     # Désactiver le stockage des logs localement
     sed -i '/\/var\/log/c\#&' /etc/rsyslog.conf
 
+    # Configurer systemd-journald pour rediriger vers rsyslog
+    configure_journald
+    
     # Redémarrer le service rsyslog
     systemctl restart rsyslog
     echo "Client Syslog installé et configuré pour rediriger les logs vers le serveur Syslog sans les stocker localement."
