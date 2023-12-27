@@ -8,7 +8,7 @@ apt install -y cloud-init
 
 # Configuration de SSH pour autoriser la connexion en tant que root
 SSH_CONFIG="/etc/ssh/sshd_config"
-sed -i "s/PermitRootLogin prohibit-password/PermitRootLogin yes/g" "$SSH_CONFIG"
+sed -i "s/#PermitRootLogin prohibit-password/PermitRootLogin yes/g" "$SSH_CONFIG"
 
 # Sauvegarde et modification de la configuration réseau
 NETWORK_CONFIG="/etc/network/interfaces"
