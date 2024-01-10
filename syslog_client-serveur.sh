@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Adresse IP du serveur Syslog par défaut
-DEFAULT_SERVER_IP="10.10.10.4"
+DEFAULT_SERVER_IP="10.10.10.103"
 
 
 # Fonction d'aide
@@ -15,7 +15,7 @@ show_help() {
     echo "Exemples :"
     echo "  bash $0 server"
     echo "  bash $0 client"
-    echo "  bash $0 client 10.10.10.4"
+    echo "  bash $0 client 10.10.10.103"
 }
 
 # Vérifier si l'utilisateur est root
@@ -47,7 +47,24 @@ is_client_configured() {
 # Fonction pour configurer systemd-journald
 configure_journald() {
     echo "ForwardToSyslog=yes" >> /etc/systemd/journald.conf
+    echo "MaxRetentionSec=24hour" >> /etc/systemd/journald.conf  # Pour les VMs
     systemctl restart systemd-journald
+}
+
+configure_log_rotation() {
+    echo "/var/log/*.log {
+        daily
+        missingok
+        rotate 30
+        compress
+        delaycompress
+        notifempty
+        create 640 syslog adm
+        sharedscripts
+        postrotate
+            systemctl restart rsyslog > /dev/null
+        endscript
+    }" > /etc/logrotate.d/rsyslog
 }
 
 # Fonction pour installer le serveur Syslog
@@ -69,6 +86,7 @@ install_server() {
 
     # Configurer systemd-journald pour rediriger vers rsyslog
     configure_journald
+    configure_log_rotation
 
     # Redémarrer le service rsyslog
     systemctl restart rsyslog
@@ -91,18 +109,15 @@ install_client() {
     # Utiliser l'adresse IP fournie ou l'adresse IP par défaut
     SERVER_IP=${1:-$DEFAULT_SERVER_IP}
 
-    # Configurer le client Syslog pour rediriger les logs vers le serveur Syslog sans les stocker localement
+    # Configurer le client Syslog pour rediriger les logs vers le serveur Syslog tout en les gardant localement
     echo "*.* @$SERVER_IP:514" | tee -a /etc/rsyslog.d/50-default.conf
 
-    # Désactiver le stockage des logs localement
-    sed -i '/\/var\/log/c\#&' /etc/rsyslog.conf
-
-    # Configurer systemd-journald pour rediriger vers rsyslog
+    # Configurer systemd-journald pour rediriger vers rsyslog tout en conservant les logs localement pendant 24 heures
     configure_journald
     
     # Redémarrer le service rsyslog
     systemctl restart rsyslog
-    echo "Client Syslog installé et configuré pour rediriger les logs vers le serveur Syslog sans les stocker localement."
+    echo "Client Syslog installé et configuré pour rediriger les logs vers le serveur Syslog tout en conservant les logs localement pendant 24 heures."
 }
 
 # Vérifiez si des arguments sont fournis
