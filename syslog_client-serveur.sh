@@ -67,6 +67,21 @@ configure_log_rotation() {
     }" > /etc/logrotate.d/rsyslog
 }
 
+# Fonction pour désinstaller le serveur ou le client Syslog
+uninstall_syslog() {
+    # Supprimer rsyslog et ses fichiers de configuration
+    apt-get remove --purge -y rsyslog
+
+    # Supprimer les fichiers de configuration spécifiques
+    rm -f /etc/rsyslog.conf
+    rm -f /etc/rsyslog.d/50-default.conf
+    rm -f /etc/systemd/journald.conf
+    rm -f /var/log/unique.log
+
+    echo "Syslog (serveur ou client) désinstallé avec succès."
+}
+
+
 # Fonction pour installer le serveur Syslog
 install_server() {
     if is_rsyslog_installed && is_server_configured; then
@@ -80,19 +95,21 @@ install_server() {
         apt-get install -y rsyslog
     fi
 
-    # Configurer le serveur Syslog
+    # Configurer le serveur Syslog pour recevoir les logs sur UDP 514
     sed -i 's/#module(load="imudp")/module(load="imudp")/' /etc/rsyslog.conf
     sed -i 's/#input(type="imudp" port="514")/input(type="imudp" port="514")/' /etc/rsyslog.conf
+
+    # Configurer le serveur Syslog pour recevoir les logs et les stocker dans unique.log
+    echo "*.* /var/log/unique.log" | tee -a /etc/rsyslog.conf
 
     # Configurer systemd-journald pour rediriger vers rsyslog
     configure_journald
     configure_log_rotation
-
+    
     # Redémarrer le service rsyslog
     systemctl restart rsyslog
-    echo "Serveur Syslog installé et configuré."
+    echo "Serveur Syslog installé et configuré pour enregistrer tous les logs dans /var/log/unique.log."
 }
-
 # Fonction pour installer le client Syslog
 install_client() {
     if is_client_configured; then
@@ -133,6 +150,9 @@ case "$1" in
         ;;
     client)
         install_client "$2"
+        ;;
+    uninstall)
+        uninstall_syslog
         ;;
     help | *)
         show_help
