@@ -26,7 +26,6 @@ IMAGE /root/images/Debian-1202-bookworm-amd64-base.tar.gz
 SSHKEYS_URL /root/.ssh/authorized_keys
 EOF
 
-
 # Informer l'utilisateur que le fichier de configuration est prêt
 echo "Le fichier de configuration /autosetup a été créé avec les paramètres suivants :"
 cat $AUTOSetup_FILE
