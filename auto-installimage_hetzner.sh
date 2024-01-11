@@ -1,6 +1,4 @@
 #!/bin/bash
-# Définir les autres variables nécessaires
-
 # Demander à l'utilisateur de saisir le nom d'hôte
 read -p "Entrez le nom d'hôte souhaité : " HOSTNAME
 
