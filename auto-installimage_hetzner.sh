@@ -1,10 +1,12 @@
 #!/bin/bash
 # Définir les autres variables nécessaires
-HOSTNAME="rt"
 
-# Lister les disques disponibles
+# Demander à l'utilisateur de saisir le nom d'hôte
+read -p "Entrez le nom d'hôte souhaité : " HOSTNAME
+
+# Lister les disques disponibles (en excluant "loop" et en affichant la taille et le nom officiel des disques)
 echo "Liste des disques disponibles :"
-lsblk -o NAME,SIZE,TYPE,MOUNTPOINT,FSTYPE,LABEL,MODEL
+lsblk -d -n -o NAME,SIZE,MODEL | grep -E '^(s|nvme)'
 
 # Demander à l'utilisateur de sélectionner les disques pour le RAID 1
 read -p "Entrez le nom exact du premier disque pour le RAID 1 (ex: sda, nvme0n1): " RAID_DISK1
@@ -34,3 +36,7 @@ cat $AUTOSetup_FILE
 echo "Lancement de installimage..."
 /root/.oldroot/nfs/install/installimage
 
+# Redémarrer le serveur
+echo "Redémarrage du serveur..."
+sleep 2
+reboot
