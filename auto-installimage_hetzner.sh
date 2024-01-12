@@ -35,6 +35,7 @@ echo ""
 
 # Nombre de disques disponibles
 nb_disques=${#disques[@]}
+disque_defaut=${disques[0]}
 
 # Initialisation du fichier /autosetup
 AUTOSetup_FILE="/autosetup"
@@ -46,41 +47,25 @@ EOF
 # Compteur pour les identifiants de DRIVE
 drive_count=1
 
-# Instructions et configuration RAID
-if [ $nb_disques -le 2 ]; then
-    echo "Vous disposez de $nb_disques disque(s) pour la configuration RAID."
-    read -p "Voulez-vous configurer un RAID avec ces disques (o/n) ? " choix_raid
-    echo ""
-    if [[ $choix_raid == 'o' ]]; then
-        echo "SWRAID 1" >> $AUTOSetup_FILE
-        echo "RAIDLEVEL 1" >> $AUTOSetup_FILE
-        for disk in "${disques[@]}"; do
-            echo "DRIVE${drive_count} /dev/$disk" >> $AUTOSetup_FILE
-            ((drive_count++))
-        done
-    else
-        echo "Configuration RAID annulée. Configuration standard des disques."
-        for disk in "${disques[@]}"; do
-            echo "DRIVE${drive_count} /dev/$disk" >> $AUTOSetup_FILE
-            ((drive_count++))
-        done
-    fi
-else
-    echo "Vous pouvez créer plusieurs configurations RAID."
+# Instructions et configuration RAID ou standard
+echo "Vous disposez de $nb_disques disque(s)."
+read -p "Voulez-vous configurer un RAID avec ces disques (o/n) ? " choix_raid
+echo ""
+if [[ $choix_raid == 'o' ]]; then
     echo "SWRAID 1" >> $AUTOSetup_FILE
     echo "RAIDLEVEL 1" >> $AUTOSetup_FILE
-    read -p "Combien de configurations RAID voulez-vous créer ? " nb_raids
-    echo ""
-    for ((i=1; i<=nb_raids; i++)); do
-        echo "Configuration pour le RAID $i :"
-        read -p "Combien de disques dans ce RAID ? " nb_disques_dans_raid
-        echo ""
-        for ((j=1; j<=nb_disques_dans_raid; j++)); do
-            read -p "Entrez le nom exact du disque $j pour le RAID $i (ex: sda, nvme0n1): " disk
+    for disk in "${disques[@]}"; do
+        echo "DRIVE${drive_count} /dev/$disk" >> $AUTOSetup_FILE
+        ((drive_count++))
+    done
+else
+    echo "Configuration RAID annulée. Sélectionnez les disques pour l'installation."
+    for disk in "${disques[@]}"; do
+        read -p "Utiliser $disk pour l'installation (o/n) ? " use_disk
+        if [[ $use_disk == 'o' ]]; then
             echo "DRIVE${drive_count} /dev/$disk" >> $AUTOSetup_FILE
             ((drive_count++))
-        done
-        echo ""
+        fi
     done
 fi
 
