@@ -18,14 +18,13 @@ echo ""
 
 # Nombre de disques disponibles
 nb_disques=${#disques[@]}
+disque_defaut=${disques[0]}
 
 # Initialisation du fichier /autosetup
 AUTOSetup_FILE="/autosetup"
 cat > $AUTOSetup_FILE <<EOF
 HOSTNAME $HOSTNAME
 BOOTLOADER grub
-SWRAID 1
-RAIDLEVEL 1
 EOF
 
 # Compteur pour les identifiants de DRIVE
@@ -37,15 +36,22 @@ if [ $nb_disques -le 2 ]; then
     read -p "Voulez-vous configurer un RAID avec ces disques (o/n) ? " choix_raid
     echo ""
     if [[ $choix_raid == 'o' ]]; then
+        echo "SWRAID 1" >> $AUTOSetup_FILE
+        echo "RAIDLEVEL 1" >> $AUTOSetup_FILE
         for disk in "${disques[@]}"; do
-            echo "DRIVE$drive_count /dev/$disk" >> $AUTOSetup_FILE
+            echo "DRIVE${drive_count} /dev/$disk" >> $AUTOSetup_FILE
             ((drive_count++))
         done
     else
-        echo "Configuration RAID annulée."
+        echo "Configuration RAID annulée. Le premier disque (par défaut) est $disque_defaut."
+        read -p "Entrez le nom du disque pour l'installation (default: $disque_defaut): " disk_install
+        disk_install=${disk_install:-$disque_defaut}
+        echo "DRIVE1 /dev/$disk_install" >> $AUTOSetup_FILE
     fi
 else
     echo "Vous pouvez créer plusieurs configurations RAID."
+    echo "SWRAID 1" >> $AUTOSetup_FILE
+    echo "RAIDLEVEL 1" >> $AUTOSetup_FILE
     read -p "Combien de configurations RAID voulez-vous créer ? " nb_raids
     echo ""
     for ((i=1; i<=nb_raids; i++)); do
@@ -54,7 +60,7 @@ else
         echo ""
         for ((j=1; j<=nb_disques_dans_raid; j++)); do
             read -p "Entrez le nom exact du disque $j pour le RAID $i (ex: sda, nvme0n1): " disk
-            echo "DRIVE$drive_count /dev/$disk" >> $AUTOSetup_FILE
+            echo "DRIVE${drive_count} /dev/$disk" >> $AUTOSetup_FILE
             ((drive_count++))
         done
         echo ""
