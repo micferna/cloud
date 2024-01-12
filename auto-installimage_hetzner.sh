@@ -7,6 +7,23 @@ echo "--------------------------------"
 read -p "Entrez le nom d'hôte souhaité (ex: MonServeur): " HOSTNAME
 echo ""
 
+# Chemin vers le répertoire contenant les images
+IMAGES_PATH="/root/images"
+
+# Liste des images disponibles
+echo "Images disponibles dans $IMAGES_PATH :"
+AVAILABLE_IMAGES=($(ls $IMAGES_PATH))
+for img in "${AVAILABLE_IMAGES[@]}"; do
+    echo " - $img"
+done
+
+# Nom de l'image par défaut
+DEFAULT_IMAGE="Debian-1202-bookworm-amd64-base.tar.gz"
+
+# Demander le nom de l'image
+read -p "Entrez le nom de l'image souhaitée (default: $DEFAULT_IMAGE): " IMAGE_CHOSEN
+IMAGE_CHOSEN=${IMAGE_CHOSEN:-$DEFAULT_IMAGE}
+
 # Lister les disques disponibles
 echo "Liste des disques disponibles :"
 disques=($(lsblk -d -n -o NAME | grep -E '^(s|nvme)'))
@@ -18,7 +35,6 @@ echo ""
 
 # Nombre de disques disponibles
 nb_disques=${#disques[@]}
-disque_defaut=${disques[0]}
 
 # Initialisation du fichier /autosetup
 AUTOSetup_FILE="/autosetup"
@@ -43,10 +59,11 @@ if [ $nb_disques -le 2 ]; then
             ((drive_count++))
         done
     else
-        echo "Configuration RAID annulée. Le premier disque (par défaut) est $disque_defaut."
-        read -p "Entrez le nom du disque pour l'installation (default: $disque_defaut): " disk_install
-        disk_install=${disk_install:-$disque_defaut}
-        echo "DRIVE1 /dev/$disk_install" >> $AUTOSetup_FILE
+        echo "Configuration RAID annulée. Configuration standard des disques."
+        for disk in "${disques[@]}"; do
+            echo "DRIVE${drive_count} /dev/$disk" >> $AUTOSetup_FILE
+            ((drive_count++))
+        done
     fi
 else
     echo "Vous pouvez créer plusieurs configurations RAID."
@@ -72,7 +89,7 @@ cat >> $AUTOSetup_FILE <<EOF
 PART /boot ext3 512M
 PART / ext4 all
 #PART swap swap 16G
-IMAGE /root/images/Debian-1202-bookworm-amd64-base.tar.gz
+IMAGE /root/images/$IMAGE_CHOSEN
 SSHKEYS_URL /root/.ssh/authorized_keys
 EOF
 
